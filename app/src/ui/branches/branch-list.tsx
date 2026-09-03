@@ -349,6 +349,7 @@ export class BranchList extends React.Component<
     switch (label) {
       case 'default':
       case 'recent':
+      case 'release':
       case 'other':
         return label
       default:
@@ -383,6 +384,8 @@ export class BranchList extends React.Component<
       return __DARWIN__ ? 'Default Branch' : 'Default branch'
     } else if (identifier === 'recent') {
       return __DARWIN__ ? 'Recent Branches' : 'Recent branches'
+    } else if (identifier === 'release') {
+      return __DARWIN__ ? 'Current Release Branch' : 'Current release branch'
     } else if (identifier === 'other') {
       return __DARWIN__ ? 'Other Branches' : 'Other branches'
     } else {
