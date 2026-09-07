@@ -34,6 +34,36 @@ console.log(
 const pkgBin = process.platform === 'win32' ? 'pkg.cmd' : 'pkg'
 const entry = path.join(updaterRoot, 'build', 'main.js')
 const out = path.join(distRoot, 'updater.exe')
-run(pkgBin, ['--targets', 'node22-win-x64', '--output', out, entry], repoRoot)
+
+/*
+ * --no-bytecode, because baking bytecode cannot run here.
+ *
+ * pkg compiles the script to V8 bytecode by spawning its cached base binary,
+ * and that spawn fails with EPERM on this machine — the 57MB unsigned node in
+ * %USERPROFILE%.pkg-cache cannot be executed, whatever environment it is given.
+ * Security software is the likely reason and not something a build script can
+ * argue with.
+ *
+ * Without bytecode the script is embedded as source instead. For an internal
+ * updater that costs nothing worth having: the exe is the same size, starts the
+ * same way, and the JS inside it was never a secret. --public and
+ * --public-packages keep pkg from warning about the same thing for every module
+ * it bundles.
+ */
+run(
+  pkgBin,
+  [
+    '--no-bytecode',
+    '--public',
+    '--public-packages',
+    '*',
+    '--targets',
+    'node22-win-x64',
+    '--output',
+    out,
+    entry,
+  ],
+  repoRoot
+)
 
 console.log(`Updater bundled at ${out}`)

@@ -221,9 +221,17 @@ function packageWindows() {
       }
     })
     .then(() => {
-      // Emit a portable zip of the packaged app folder so the fork's custom
-      // updater has something to download from GitHub Releases. tar.exe (built
-      // into Windows 10+) handles .zip with `-a -cf`.
+      /*
+       * Emit a portable zip of the packaged app folder so the fork's custom
+       * updater has something to download from GitHub Releases. The tar.exe
+       * built into Windows 10+ is bsdtar, which handles .zip with `-a -cf`.
+       *
+       * Named by its full path rather than left to PATH. Git for Windows ships
+       * GNU tar in its own bin directory, and a build started from Git Bash
+       * finds that one first — it reads `C:\…` as a host to connect to and
+       * fails with "Cannot connect to C: resolve failed" after everything else
+       * has already been built and signed.
+       */
       const arch = getDistArchitecture()
       const zipName = `${getWindowsIdentifierName()}-win32-${arch}.zip`
       const zipPath = join(outputDir, zipName)
@@ -231,9 +239,17 @@ function packageWindows() {
         rmSync(zipPath)
       }
       console.log(`Creating portable zip ${zipName}…`)
-      cp.execFileSync('tar.exe', ['-a', '-cf', zipPath, '-C', distPath, '.'], {
-        stdio: 'inherit',
-      })
+      const systemTar = join(
+        process.env.SystemRoot ?? 'C:\\Windows',
+        'system32',
+        'tar.exe'
+      )
+
+      cp.execFileSync(
+        existsSync(systemTar) ? systemTar : 'tar.exe',
+        ['-a', '-cf', zipPath, '-C', distPath, '.'],
+        { stdio: 'inherit' }
+      )
     })
     .catch(e => {
       console.error(`Error packaging: ${e}`)
