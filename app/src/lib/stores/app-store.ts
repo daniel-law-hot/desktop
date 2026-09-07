@@ -4963,7 +4963,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     release: IReleaseBranchState,
     productionBranch: Branch,
-    mergeBackInto: Branch | null
+    mergeBackInto: Branch | null,
+
+    /**
+     * Whether to insist on a merge commit for the release landing.
+     *
+     * Off by default: the merge runs bare and git fast-forwards where it can,
+     * which is what typing the command would do. This was `--no-ff` always, on
+     * the theory that a release landing in production should be one visible
+     * event — a defensible default, but not one worth taking the choice away
+     * for, and the preview said `--no-ff` because the code did.
+     */
+    noFastForward: boolean = false
   ): Promise<void> {
     const releaseBranch = release.branch
     const version = release.version.raw
@@ -4974,9 +4985,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       await this._checkoutBranch(repository, productionBranch)
       await this._pull(repository)
 
-      // 2. Merge the release in. --no-ff because a release landing in
-      //    production should always be a visible, single event in the history.
-      const mergeResult = await gitStore.merge(releaseBranch, { noFf: true })
+      // 2. Merge the release in, with or without a forced merge commit — the
+      //    dialog decides, and defaults to letting git fast-forward.
+      const mergeResult = await gitStore.merge(releaseBranch, {
+        noFf: noFastForward,
+      })
 
       if (mergeResult !== MergeResult.Success) {
         // Conflicts on a release-to-production merge are unusual and want human

@@ -30,6 +30,7 @@ interface IFinishReleaseDialogProps {
 interface IFinishReleaseDialogState {
   readonly typedVersion: string
   readonly mergeBack: boolean
+  readonly noFastForward: boolean
   readonly overrideBehind: boolean
   readonly checks: ReadonlyArray<IPreflightCheck>
   readonly isChecking: boolean
@@ -58,6 +59,11 @@ export class FinishReleaseDialog extends React.Component<
       // Checked by default when there's something that would otherwise be
       // orphaned on production — forgetting is how a hotfix gets lost.
       mergeBack: (release?.releaseOnlyCommits.length ?? 0) > 0,
+
+      // Off, so the command runs bare and git decides. Per dialog rather than
+      // remembered: it is a property of the release being shipped, not a
+      // preference, and the preview above the button says which one it is.
+      noFastForward: false,
       overrideBehind: false,
       checks: [],
       isChecking: true,
@@ -242,6 +248,14 @@ export class FinishReleaseDialog extends React.Component<
 
           {this.renderMergeBack()}
 
+          <Checkbox
+            label="No fast forward — land the release as a merge commit"
+            value={
+              this.state.noFastForward ? CheckboxValue.On : CheckboxValue.Off
+            }
+            onChange={this.onNoFastForwardChanged}
+          />
+
           <div className="hotflow-confirm">
             <TextBox
               label={`Type ${version} to confirm`}
@@ -257,7 +271,8 @@ export class FinishReleaseDialog extends React.Component<
               this.productionName,
               this.integrationName,
               this.state.mergeBack,
-              this.hasStrandedCommits
+              this.hasStrandedCommits,
+              this.state.noFastForward
             )}
           />
         </DialogContent>
@@ -328,6 +343,12 @@ export class FinishReleaseDialog extends React.Component<
     this.setState({ mergeBack: event.currentTarget.checked })
   }
 
+  private onNoFastForwardChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    this.setState({ noFastForward: event.currentTarget.checked })
+  }
+
   private onOverrideBehindChanged = (
     event: React.FormEvent<HTMLInputElement>
   ) => {
@@ -350,7 +371,8 @@ export class FinishReleaseDialog extends React.Component<
       repository,
       release,
       productionBranch,
-      this.state.mergeBack ? integrationBranch : null
+      this.state.mergeBack ? integrationBranch : null,
+      this.state.noFastForward
     )
 
     this.props.onDismissed()

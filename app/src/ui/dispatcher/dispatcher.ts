@@ -478,19 +478,22 @@ export class Dispatcher {
    *
    * Pass `mergeBackInto` to also merge the release branch back into the
    * integration branch, which keeps commits that only existed on the release
-   * branch from being stranded on production.
+   * branch from being stranded on production. Pass `noFastForward` to record
+   * the landing as a merge commit even where it could fast-forward.
    */
   public finishRelease(
     repository: Repository,
     release: IReleaseBranchState,
     productionBranch: Branch,
-    mergeBackInto: Branch | null
+    mergeBackInto: Branch | null,
+    noFastForward: boolean = false
   ): Promise<void> {
     return this.appStore._finishRelease(
       repository,
       release,
       productionBranch,
-      mergeBackInto
+      mergeBackInto,
+      noFastForward
     )
   }
 

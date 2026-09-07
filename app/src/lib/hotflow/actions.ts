@@ -504,7 +504,16 @@ export function describeFinishReleaseCommands(
    * Absent from the preview when there is nothing stranded, which is the ordinary
    * case — a step that does nothing shouldn't be advertised as part of shipping.
    */
-  catchIntegrationUp: boolean = false
+  catchIntegrationUp: boolean = false,
+
+  /**
+   * Whether to record the merge even where it could fast-forward.
+   *
+   * Off by default, which leaves the command bare and lets git decide, the same
+   * as typing it yourself would. It used to be on and unconditional, so every
+   * release landed as a merge commit whether or not there was anything to merge.
+   */
+  noFastForward: boolean = false
 ): ReadonlyArray<string> {
   const releaseRef = release.branch.nameWithoutRemote
   const version = release.version.raw
@@ -512,7 +521,7 @@ export function describeFinishReleaseCommands(
   const commands = [
     `git checkout ${productionName}`,
     `git pull origin ${productionName}`,
-    `git merge ${releaseRef} --no-ff`,
+    `git merge ${releaseRef}${noFastForward ? ' --no-ff' : ''}`,
     `git tag -a -m "" ${version}`,
     `git push origin ${productionName} --follow-tags`,
   ]
